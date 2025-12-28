@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # --- Database ---
   postgres:
@@ -62,5 +60,19 @@ services:
     ports:
       - "8081:8081"
     depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  notification-service:
+    build: ./notification-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/notification_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-service:
+        condition: service_started
       eureka-server:
         condition: service_healthy
