@@ -1,16 +1,22 @@
 package com.gate.api_gateaway.filter;
 
+import com.gate.api_gateaway.util.JwtUtil;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
 import org.springframework.cloud.gateway.filter.factory.SetPathGatewayFilterFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 
 @Component
-abstract class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAuthenticationFilter.Config> {
-    public JwtAuthenticationFilter() {
+class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAuthenticationFilter.Config> {
+    private final JwtUtil jwtUtil;
+
+    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
         super(Config.class);
+        this.jwtUtil = jwtUtil;
     }
 
     @Getter
@@ -37,7 +43,12 @@ abstract class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtA
 
             String token =  authHeader.substring(7);
 
-            // TODO: verfiication b config.getSecret();
+            boolean isValid = jwtUtil.validateToken(token);
+
+            if (!isValid) {
+                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                return exchange.getResponse().setComplete();
+            }
 
             return chain.filter(exchange);
         };
