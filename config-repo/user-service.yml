@@ -1,11 +1,13 @@
-spring:
+server:
   port: 8080
+
+spring:
   application:
-    name: USER-SERVICE
+    name: user-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/user_db
+    url: JDBC:postgresql://postgres:5432/user_db
     username: postgres
-    password: hitler20.
+    password: ${DB_PASSWORD}
 
 
   jpa:
