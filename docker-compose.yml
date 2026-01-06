@@ -1,5 +1,5 @@
 services:
-  # --- Database ---
+  # --- Infrastructure Services ---
   postgres:
     image: postgres:15
     environment:
@@ -13,7 +13,11 @@ services:
       timeout: 5s
       retries: 5
 
-  # --- Infrastructure Services ---
+  redis:
+    image: redis:alpine
+    ports:
+      - "6397:6397"
+  # --- Discovery & Config ---
   eureka-server:
     build: ./eureka-server
     ports:
@@ -41,6 +45,19 @@ services:
       eureka-server:
         condition: service_healthy
 
+  # --- Business Services ---
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_REDIS_HOST=redis
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      config-service:
+        condition: service_healthy
+
   auth-service:
     build: ./auth-service
     environment:
@@ -65,55 +82,9 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CLOUD_CONFIG_RETRY_MAX_ATTEMPTS=20
       - SPRING_CLOUD_CONFIG_RETRY_INITIAL_INTERVAL=2000
+      - SPRING_REDIS_HOST=redis
     depends_on:
       postgres:
         condition: service_healthy
       config-service:
         condition: service_healthy
-
-
-  # --- Business Services ---
-  #  auth-service:
-  #    build: ./auth-service
-  #    environment:
-  #      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/auth_db
-  #      JWT_SECRET: ${JWT_SECRET}
-  #    depends_on:
-  #      postgres:
-  #        condition: service_healthy
-  #      config-service:
-  #        condition: service_started
-
-  #  user-service:
-  #    build: ./user-service
-  #    environment:
-  #      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/user_db
-  #    depends_on:
-  #      postgres:
-  #        condition: service_healthy
-  #      config-service:
-  #        condition: service_started
-
-  api-gateway:
-    build: ./api-gateway
-    ports:
-      - "8081:8081"
-    depends_on:
-      eureka-server:
-        condition: service_healthy
-      config-service:
-        condition: service_healthy
-#
-#  notification-service:
-#    build: ./notification-service
-#    ports:
-#      - "8082:8082"
-#    environment:
-#      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/notification_db
-#    depends_on:
-#      postgres:
-#        condition: service_healthy
-#      config-service:
-#        condition: service_started
-#      eureka-server:
-#        condition: service_healthy
